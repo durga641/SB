@@ -1,0 +1,40 @@
+"Draw a high-level flow diagram for a Snowflake–Bitbucket deployment pipeline with the following steps: a. Multiple developers create feature branches from main and develop SQL changes independently. b. Developers commit and push SQL scripts to feature branches, triggering QA deployment. c. Pipeline deploys only changed SQLs to isolated QA schemas for testing and validation. d. Developers raise pull requests to merge feature branches into main; PR review ensures conflict resolution and SQL/code quality. e. On PR merge, pipeline identifies all SQLs changed since last production deployment. f. Pre-deployment folder or DEPLOYMENT_PENDING table is updated for review and approval. g. Optional manual approval by DBAs or stakeholders before production deployment. h. Pipeline executes only changed SQLs in production in order: DDL first, DML next, via Redcick orchestrated jobs triggered by Jenkins. i. Execution logs, notifications, and last deployed commit hash updates are maintained for audit. j. Optional enhancements include dry-run in QA, dependency-aware execution, and automated manifest generation."[Start] 
+   │
+   ▼
+[Developers create feature branches from main & develop SQL changes independently]
+   │
+   ▼
+[Commit & push SQL scripts to feature branches]
+   │
+   ▼
+[Pipeline triggers QA deployment]
+   │
+   ▼
+[Deploy only changed SQLs to isolated QA schemas for testing & validation]
+   │
+   ▼
+[Developers raise Pull Requests (PRs) to merge feature branches into main]
+   │
+   ▼
+[PR Review: conflict resolution & SQL/code quality check]
+   │
+   ▼
+[On PR merge, pipeline identifies all SQLs changed since last production deployment]
+   │
+   ▼
+[Update pre-deployment folder / DEPLOYMENT_PENDING table for review & approval]
+   │
+   ▼
+[Optional manual approval by DBAs or stakeholders]
+   │
+   ▼
+[Pipeline executes changed SQLs in production (DDL → DML) via Redcick jobs triggered by Jenkins]
+   │
+   ▼
+[Execution logs captured, notifications sent, last deployed commit hash updated]
+   │
+   ▼
+[Optional Enhancements: QA dry-run, dependency-aware execution, automated manifest generation]
+   │
+   ▼
+[End]
