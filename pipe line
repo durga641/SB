@@ -1,0 +1,8 @@
+pipelines:
+  custom:
+    manual-deploy-dev:
+      - step:
+          name: Manual Deploy to Dev
+          script:
+            - chmod +x scripts/deploy_with_metadata.sh
+            - ./scripts/deploy_with_metadata.sh dev
