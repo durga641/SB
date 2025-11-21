@@ -1,0 +1,63 @@
+Documentation: Snowflake Git Integration Issue (Bitbucket Workspace Setup) 
+1. Summary of the Issue 
+We attempted to configure Snowflake Workspaces to connect to our Bitbucket repository. 
+However, Snowflake is returning the following errors: 
+• “object does not exist or operation cannot be performed” 
+• “unexpected PROVIDERS” when running SHOW API PROVIDERS 
+These errors indicate that our Snowflake account does not have the Git Integration 
+feature (git_https_api provider) enabled. 
+This feature is required to connect Snowflake Workspaces to any Git provider (GitHub, 
+Bitbucket, etc.). 
+2. Why This Problem Occurs 
+Even though the Snowflake region AWS_US_EAST_1 supports Git Integrations, 
+the feature is not automatically enabled for every account. 
+To use Git-based Workspaces, Snowflake must enable the following provider: 
+git_https_api 
+This provider is required to create the API INTEGRATION: 
+CREATE API INTEGRATION ... API_PROVIDER = git_https_api; 
+If the provider isn’t activated, Snowflake blocks the operation. 
+3. Evidence of the Issue 
+When running: 
+SHOW API PROVIDERS; 
+We receive the error: 
+“unexpected PROVIDERS” 
+This confirms that the Git Integration provider is not enabled in our account. 
+When creating API integration: 
+CREATE OR REPLACE API INTEGRATION bitbucket_integration 
+API_PROVIDER = git_https_api 
+API_ALLOWED_PREFIXES = ('https://bitbucket.org/<workspace>/') 
+ENABLED = TRUE; 
+Snowflake returns: 
+“object does not exist or operation cannot be performed” 
+This is the expected failure when the Git provider is missing. 
+4. Impact 
+• We cannot connect Snowflake Workspaces to Bitbucket. 
+• We cannot create Git repositories inside Snowflake. 
+• Developers cannot use Workspaces for SQL/DBT version control. 
+• Git-based CI/CD inside Snowflake is blocked. 
+This stops our planned development workflow. 
+5. Required Action 
+We must raise a Snowflake Support ticket requesting activation of the Git Integration 
+feature. 
+This is a standard step and usually completed in 1–4 hours. 
+6. Support Ticket Message (Copy/Paste Ready) 
+Subject: Request to Enable git_https_api Provider for Git Integration 
+Message: 
+Hello Snowflake Support, 
+We are trying to configure Snowflake Workspaces with a Bitbucket repository. 
+However, we are unable to create an API INTEGRATION using the provider 
+`git_https_api`. 
+Running `SHOW API PROVIDERS` returns "unexpected PROVIDERS", which indicates 
+that the Git Integration feature (git_https_api provider) is not enabled for 
+our account. 
+Could you please enable the Git Integration feature, including the 
+`git_https_api` API provider, for our Snowflake account in region AWS_US_EAST_1? 
+This is required for Git Repository integration and Workspace functionality. 
+Thank you. 
+7. What Happens After Support Enables It 
+Once Snowflake activates the provider: 
+✔ SHOW API PROVIDERS will work 
+✔ git_https_api will appear in the list 
+✔ The API INTEGRATION creation will succeed 
+✔ We can create the Bitbucket Git Repository 
+✔ Developers can use Snowflake Workspaces normally 
