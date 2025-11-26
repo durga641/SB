@@ -1,0 +1,248 @@
+# 📘 Simple DBT Snowflake Project
+
+A minimal DBT project to learn DBT fundamentals using Snowflake.
+Ideal for education, demos, and POCs.
+
+## 📚 Table of Contents
+
+Overview
+
+Prerequisites
+
+Snowflake Setup
+
+Install DBT
+
+Create DBT Project (with parameters)
+
+Configure Profiles.yml
+
+Project Structure
+
+Create Models
+
+Run DBT
+
+Validate Models
+
+Lineage Graph
+
+Troubleshooting
+
+Future Enhancements
+
+## 🧩 1. Overview
+
+This project demonstrates a simple end-to-end DBT workflow using Snowflake:
+
+Ingest raw data into Snowflake
+
+Transform data using DBT models
+
+Create staging + mart layers
+
+Auto-generate schemas & DAG
+
+Run models
+
+Test models
+
+The project contains:
+
+✔ 1 raw table
+✔ 1 staging model
+✔ 1 mart model
+✔ dbt_project.yml
+✔ profiles.yml instructions
+✔ full documentation
+
+## 🧑‍💻 2. Prerequisites
+
+Snowflake account (UI access is enough)
+
+VS Code
+
+Python 3.8+
+
+Git installed
+
+dbt-core + dbt-snowflake
+
+## ❄️ 3. Snowflake Setup (Already Done by You)
+
+Run in Snowflake:
+
+CREATE OR REPLACE DATABASE DEMO_DB;
+CREATE OR REPLACE SCHEMA RAW;
+
+CREATE OR REPLACE TABLE RAW.RAW_SALES (
+    order_id INTEGER,
+    customer_name STRING,
+    amount NUMBER(10,2),
+    order_date DATE
+);
+
+INSERT INTO RAW.RAW_SALES VALUES
+(1, 'RAMESH', 120, '2024-01-10'),
+(2, 'SURESH', 250, '2024-01-11'),
+(3, 'MAHESH', 450, '2024-01-12'),
+(4, 'RAMESH', 300, '2024-02-01');
+
+## ⚙️ 4. Install DBT
+
+Run in VS Code Terminal:
+
+pip install dbt-core dbt-snowflake
+
+
+Verify:
+
+dbt --version
+
+## 🏗️ 5. Create DBT Project (Step 1)
+
+Run:
+
+dbt init my_first_project
+
+## 📝 PROMPTS & PARAMETERS DURING dbt init (Step 2)
+
+Below are the exact values you should enter during initialization:
+
+Prompt	Value to Enter
+Which database?	1 (Snowflake)
+account	<your_account>.your_region>
+Example: xy12345.us-east-1
+user	Your Snowflake username
+password	Your Snowflake password
+role	SYSADMIN (or your role)
+warehouse	COMPUTE_WH
+database	DEMO_DB
+schema	DBT_DEV
+threads	4
+client_session_keep_alive	False
+## 🔧 6. Configure profiles.yml
+
+Create file:
+
+C:\Users\<your_user>\.dbt\profiles.yml
+
+
+Paste:
+
+my_first_project:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: <your_account>              # Example: xy12345.us-east-1
+      user: <your_username>
+      password: <your_password>
+      role: SYSADMIN
+      warehouse: COMPUTE_WH
+      database: DEMO_DB
+      schema: DBT_DEV
+      threads: 4
+      client_session_keep_alive: False
+
+
+Test connection:
+
+dbt debug
+
+## 📂 7. Project Structure
+my_first_project/
+│── dbt_project.yml
+│── models/
+│   ├── staging/
+│   │     └── stg_sales.sql
+│   └── marts/
+│         └── fct_sales.sql
+└── README.md
+
+## 🏗️ 8. Create Models
+📌 models/staging/stg_sales.sql
+{{ config(materialized='view') }}
+
+select
+    order_id,
+    customer_name,
+    amount,
+    order_date
+from DEMO_DB.RAW.RAW_SALES;
+
+📌 models/marts/fct_sales.sql
+{{ config(materialized='table') }}
+
+select
+    customer_name,
+    count(order_id) as total_orders,
+    sum(amount) as total_revenue
+from {{ ref('stg_sales') }}
+group by 1
+order by 3 desc;
+
+## 🚀 9. Run DBT
+
+Run everything:
+
+dbt run
+
+
+Expected output:
+
+stg_sales ... OK
+fct_sales ... OK
+
+## 🔍 10. Validate Models
+
+Run basic tests:
+
+dbt test
+
+## 🧭 11. Lineage Graph
+dbt docs generate
+dbt docs serve
+
+
+This opens a web UI showing stg_sales → fct_sales DAG.
+
+## 🛠 12. Troubleshooting
+❌ dbt is not recognized
+
+Install:
+
+pip install dbt-core dbt-snowflake
+
+❌ Connection error during dbt debug
+
+Check:
+
+Account format: xy12345.us-east-1
+
+Schema & warehouse exist in Snowflake
+
+Role has permissions
+
+❌ Cannot see tables in Snowflake
+
+Check this schema:
+
+DEMO_DB.DBT_DEV.STAGING
+DEMO_DB.DBT_DEV.MARTS
+
+## 🧱 13. Future Enhancements
+
+Add incremental models
+
+Add tests (not_null, unique, accepted_values)
+
+Add source.yml
+
+Add seed files
+
+Add macros
+
+Add CI/CD using GitHub Actions
+
+Add warehouse monitoring using dbt tests
