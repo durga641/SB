@@ -16,3 +16,329 @@ pip install --upgrade pip
 
 ✅ 4. Install dbt-core + dbt-snowflake
 pip install dbt-core dbt-snowflake
+
+
+
+Here’s a clean, end-to-end, step-by-step documentation you can literally copy into a README.md and also follow yourself.
+
+I’ll assume:
+
+You’re on Windows (I’ll note Mac/Linux where needed)
+
+You use virtualenv + VS Code terminal
+
+You’re using Snowflake + dbt-snowflake
+
+Auth is via private key (what you just set up)
+
+Project name: my_first_project
+
+Virtualenv name: dbt-env
+
+You can tweak names later.
+
+1. Prerequisites
+
+Python 3.8+ installed (python --version)
+
+Git installed (optional but good)
+
+Snowflake:
+
+Account URL
+
+User with USAGE on warehouse, DB, schemas
+
+Role (e.g. SYSADMIN)
+
+Warehouse (e.g. COMPUTE_WH)
+
+A database you can use (example: DBT_TRAINING)
+
+2. Create Python Virtual Environment & Install DBT
+
+Run these in VS Code Terminal (or any terminal).
+
+Create virtual environment
+
+python -m venv dbt-env
+
+
+Activate environment
+
+Windows
+
+dbt-env\Scripts\activate
+
+
+macOS / Linux
+
+source dbt-env/bin/activate
+
+
+Upgrade pip
+
+pip install --upgrade pip
+
+
+Install DBT for Snowflake
+
+pip install dbt-core dbt-snowflake
+
+
+Verify installation
+
+dbt --version
+
+
+You should see Core and snowflake plugin versions.
+
+3. Prepare Snowflake Objects (Once Only)
+
+In Snowflake UI (Worksheet), run (or adjust to your naming):
+
+CREATE DATABASE IF NOT EXISTS DBT_TRAINING;
+CREATE SCHEMA IF NOT EXISTS DBT_TRAINING.RAW;
+
+CREATE OR REPLACE TABLE DBT_TRAINING.RAW.RAW_SALES (
+    order_id        INTEGER,
+    customer_name   STRING,
+    amount          NUMBER(10,2),
+    order_date      DATE
+);
+
+INSERT INTO DBT_TRAINING.RAW.RAW_SALES VALUES
+(1, 'RAMESH', 120, '2024-01-10'),
+(2, 'SURESH', 250, '2024-01-11'),
+(3, 'MAHESH', 450, '2024-01-12'),
+(4, 'RAMESH', 300, '2024-02-01');
+
+
+You can replace DBT_TRAINING with any DB you prefer.
+
+4. Generate Key Pair for Snowflake (Private Key Auth)
+
+If you’ve already done this and it works, you can skip to Step 5.
+Including here for completeness.
+
+Run in a terminal (PowerShell / Git Bash / WSL / macOS / Linux)
+
+Generate private key (encrypted with passphrase)
+
+openssl genrsa -aes256 -out snowflake_key_encrypted.pem 2048
+
+
+Generate public key
+
+openssl rsa -in snowflake_key_encrypted.pem -pubout -out snowflake_key.pub
+
+
+(Optional) Convert to PKCS8 format (sometimes required)
+
+openssl pkcs8 -topk8 -inform PEM -outform PEM \
+  -in snowflake_key_encrypted.pem -out snowflake_key.p8 -v2 aes256
+
+
+Place snowflake_key.p8 somewhere like:
+
+C:\Users\<your_user>\.ssh\snowflake_key.p8
+
+
+IMPORTANT: Remember the passphrase you used when generating the key.
+
+Add Public Key to Snowflake User
+
+In Snowflake:
+
+ALTER USER <YOUR_SNOWFLAKE_USER>
+SET RSA_PUBLIC_KEY = '<contents_of_snowflake_key.pub>';
+
+
+Copy only the actual key content (between -----BEGIN PUBLIC KEY----- and -----END PUBLIC KEY-----) including those lines.
+
+5. Initialize DBT Project
+
+From inside your activated virtualenv ((dbt-env) visible in prompt):
+
+Create dbt project
+
+dbt init my_first_project
+
+
+When it asks for adapter, choose Snowflake (enter the number shown for snowflake).
+
+Then:
+
+cd my_first_project
+
+6. Configure profiles.yml (Private Key Auth)
+
+profiles.yml is not in your project folder. It lives in your user’s .dbt directory.
+
+Location (Windows)
+C:\Users\<your_username>\.dbt\profiles.yml
+
+
+If the .dbt folder doesn’t exist, create it manually.
+
+Open / create profiles.yml and put:
+
+my_first_project:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: <your_account>               # e.g. xy12345.us-east-1
+      user: <your_snowflake_user>           # e.g. VENKATA
+      role: SYSADMIN                        # or your role
+      warehouse: COMPUTE_WH                 # or your warehouse
+      database: DBT_TRAINING                # or your database
+      schema: DBT_DEV                       # dbt will create this
+      threads: 4
+      client_session_keep_alive: False
+
+      private_key_path: C:\Users\<you>\.ssh\snowflake_key.p8
+      private_key_passphrase: "<your_passphrase>"  # omit if no passphrase
+
+
+If your key is not encrypted, remove private_key_passphrase line.
+
+7. Test Connection (dbt debug)
+
+From project folder (my_first_project) and active venv:
+
+dbt debug
+
+
+You want to see:
+
+Connection test: OK
+All checks passed!
+
+
+If this is successful, DBT can talk to Snowflake using your key.
+
+8. Clean Default Example Models
+
+DBT created some sample models in models/example/. For a clean project:
+
+Delete the folder:
+
+my_first_project/models/example/
+
+
+Now models/ should be empty.
+
+9. Configure dbt_project.yml
+
+Open dbt_project.yml in the project root and replace its contents with:
+
+name: 'my_first_project'
+version: '1.0.0'
+config-version: 2
+
+profile: 'my_first_project'
+
+models:
+  my_first_project:
+    staging:
+      +schema: staging
+      +materialized: view
+
+    marts:
+      +schema: marts
+      +materialized: table
+
+
+This means:
+
+Staging models → views in schema DBT_DEV.STAGING
+
+Mart models → tables in schema DBT_DEV.MARTS
+
+10. Create Model Folders
+
+Create folders:
+
+my_first_project/
+└── models/
+    ├── staging/
+    └── marts/
+
+11. Create Staging Model
+
+Create file:
+
+my_first_project/models/staging/stg_sales.sql
+
+
+Put this SQL:
+
+{{ config(materialized='view') }}
+
+select
+    order_id,
+    customer_name,
+    amount,
+    order_date
+from DBT_TRAINING.RAW.RAW_SALES;
+
+
+If you used a different DB/Schema/table, adjust the FROM accordingly.
+
+12. Create Mart (Fact) Model
+
+Create file:
+
+my_first_project/models/marts/fct_sales.sql
+
+
+Put this SQL:
+
+{{ config(materialized='table') }}
+
+select
+    customer_name,
+    count(order_id) as total_orders,
+    sum(amount)      as total_revenue
+from {{ ref('stg_sales') }}
+group by 1
+order by total_revenue desc;
+
+13. Run DBT Models
+
+From your project directory, with venv active:
+
+dbt run
+
+
+You should see something like:
+
+1 of 2 START view model my_first_project.stg_sales ........................... [RUN]
+1 of 2 OK created view model my_first_project.stg_sales ...................... [SUCCESS 1 in Xs]
+2 of 2 START table model my_first_project.fct_sales .......................... [RUN]
+2 of 2 OK created table model my_first_project.fct_sales ..................... [SUCCESS 1 in Xs]
+
+Completed successfully
+Done. PASS=2 WARN=0 ERROR=0 SKIP=0 TOTAL=2
+
+14. Verify in Snowflake
+
+In Snowflake UI, navigate to:
+
+Database: DBT_TRAINING
+
+Schema: DBT_DEV_STAGING (or DBT_DEV.STAGING depending how UI shows it)
+
+View: STG_SALES
+
+Schema: DBT_DEV_MARTS (or DBT_DEV.MARTS)
+
+Table: FCT_SALES
+
+Run:
+
+SELECT * FROM DBT_TRAINING.DBT_DEV.MARTS.FCT_SALES;
+
+
+You should see aggregated metrics per customer.
