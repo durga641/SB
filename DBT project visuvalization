@@ -1,0 +1,33 @@
+How to Generate & View DBT Documentation (with DAG) in Browser
+1️⃣ Navigate to your DBT project folder
+
+This must be the folder that contains dbt_project.yml:
+
+cd my_first_dbt_proj
+
+2️⃣ Generate DBT documentation
+
+This creates the docs files (manifest.json, catalog.json) in the target/ folder.
+
+dbt docs generate
+
+3️⃣ Serve the documentation
+
+This starts a local web server and opens the browser:
+
+dbt docs serve
+
+
+If it doesn't open automatically, open this URL manually:
+
+http://localhost:8080
+
+4️⃣ View the DAG (Lineage Graph)
+
+In the opened UI:
+
+Look at the bottom-right corner (or top-right on large screens).
+
+Click the graph / lineage icon (node tree icon).
+
+This opens the full DAG visualization for all models.
