@@ -6,3 +6,12 @@ sources:
     schema: SOURCE_SCHEMA    # <-- schema where raw table exists
     tables:
       - name: SOURCE_TABLE   # <-- table name
+
+
+
+-----------------------------------
+select *
+from {{ source('apm_source', 'table_x') }}
+
+select *
+from {{ ref('stg_table_x') }}
