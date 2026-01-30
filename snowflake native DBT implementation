@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: qa_source          # logical name you choose
+    database: QA_DB_NAME     # <-- your real QA database
+    schema: SOURCE_SCHEMA    # <-- schema where raw table exists
+    tables:
+      - name: SOURCE_TABLE   # <-- table name
