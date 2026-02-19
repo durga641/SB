@@ -1,0 +1,936 @@
+Objective
+
+Provide an automated, controlled, and auditable framework to:
+
+Track SQL changes via Bitbucket
+
+Detect modified SQL scripts automatically
+
+Deploy only required changes
+
+Support feature → main → production promotion
+
+Maintain deployment history
+
+Enable rollback capability
+
+2. High-Level Architecture
+Developer
+   ↓ Commit SQL
+Bitbucket Repository
+   ↓
+Rundeck Job Execution
+   ↓
+Deployment Engine (Python/Scripts)
+   ↓
+Snowflake Environment
+   ↓
+Metadata + Deployment History Updated
+
+3. Repository Structure
+
+The repository acts as the single source of truth.
+
+Core Layout
+repo/
+│
+├── build-pipeline.yml
+├── README.md
+│
+├── src/
+│   ├── deploy/
+│   │   ├── deploy_with_metadata.py   (main deployment orchestrator)
+│   │   ├── gittrack.py               (detect modified SQLs)
+│   │   ├── rollback_sql.py           (rollback handler)
+│   │   └── sf_sql_exec.py            (Snowflake execution engine)
+│
+│   └── utils/
+│
+├── sql/
+│   ├── schema/
+│   ├── tables/
+│   ├── views/
+│   └── procedures/
+│
+├── metadata/
+│   ├── deployment_history_dev.json
+│   ├── deployment_history_nonprod.json
+│   └── deployment_history_prod.json
+│
+├── test/
+│   ├── test_sql/
+│   └── deployment_scenarios.md
+│
+└── docs/
+    └── Test_documentation.md
+
+4. Key Components
+4.1 Deployment Orchestrator
+
+deploy_with_metadata.py
+
+Responsibilities:
+
+Detect modified SQL files
+
+Read deployment metadata
+
+Identify last deployed commit
+
+Build deployment manifest
+
+Execute SQL in order
+
+Update metadata history
+
+4.2 Change Detection Engine
+
+Logic:
+
+git diff LAST_DEPLOYED_COMMIT → CURRENT_COMMIT
+        ↓
+filter *.sql
+        ↓
+build deployment list
+
+
+Only changed SQLs are deployed.
+
+4.3 Metadata Tracking
+
+Each environment maintains independent metadata.
+
+Example:
+
+deployment_history_prod.json
+
+
+Stores:
+
+last deployed commit
+
+executed files
+
+timestamp
+
+deployment status
+
+This enables:
+
+incremental deployment
+
+promotion validation
+
+rollback reference
+
+4.4 Snowflake Execution Engine
+
+Handles:
+
+connection initialization
+
+role/schema switching
+
+ordered SQL execution
+
+logging
+
+error handling
+
+5. Rundeck Integration
+
+Rundeck acts as deployment orchestrator.
+
+5.1 Available Jobs
+PROD Jobs
+
+Snowflake_data_eng → Production deployment
+
+Snowflake_data_eng_rollback → Production rollback
+
+NON-PROD Jobs
+
+deploy-s3
+
+deploy-s3-dataeng-snowflake
+
+Snowflake_data_eng
+
+Snowflake_data_eng_rollback
+
+Production jobs serve as reference baseline.
+
+5.2 Rundeck Execution Flow
+
+Checkout Bitbucket repository
+
+Select branch/environment
+
+Execute deployment script
+
+Detect modified SQL files
+
+Deploy to Snowflake
+
+Update metadata history
+
+Log execution results
+
+5.3 Rundeck Parameters (Typical)
+Parameter	Purpose
+branch	feature/main
+environment	dev / nonprod / prod
+rollback	enable rollback
+commit/tag	optional deployment reference
+6. Deployment Strategy
+Environment Model
+Branch	Environment
+feature/*	Dev
+main	Non-Prod
+release/tag	Production
+Promotion Flow
+Feature Branch
+      ↓
+Dev Deployment
+      ↓ Merge
+Main Branch
+      ↓
+Non-Prod Deployment
+      ↓ Approval
+Production Deployment
+
+7. Deployment Scenarios
+
+(Based on Test Documentation)
+
+Scenario 1 — Initial Deployment
+
+Developer creates new SQL objects.
+
+Expected Behavior:
+
+All SQL files detected
+
+Executed sequentially
+
+Metadata initialized
+
+Validation:
+
+Objects created
+
+Metadata updated
+
+Scenario 2 — Feature Branch Deployment
+
+Developer modifies subset of SQL files.
+
+Expected:
+
+Only modified SQL deployed
+
+No unrelated objects executed
+
+Dev metadata updated
+
+Scenario 3 — Merge to Main
+
+After PR merge:
+
+Expected:
+
+Main contains feature changes
+
+Non-prod deploy runs delta changes
+
+Execution order preserved
+
+Scenario 4 — Re-Deployment Without Changes
+
+Expected:
+
+No SQL execution
+
+System reports No Changes Detected
+
+Metadata unchanged
+
+Scenario 5 — Production Promotion
+
+System compares:
+
+Non-prod metadata vs Prod metadata
+
+
+Expected:
+
+Only approved SQL promoted
+
+Exact commit consistency maintained
+
+Scenario 6 — Multiple Developer Changes
+
+Developer A + Developer B commits.
+
+Expected:
+
+Combined delta detected
+
+Ordered execution
+
+Single deployment history entry
+
+Scenario 7 — Rollback
+
+Rollback job:
+
+Reads previous deployment metadata
+
+Reverts affected SQL objects
+
+Restores previous state
+
+8. Validation Points
+
+Deployment verifies:
+
+SQL execution success
+
+Object existence
+
+Correct execution order
+
+Metadata synchronization
+
+Commit consistency across environments
+
+PASS criteria:
+
+All files detected
+
+Execution successful
+
+Metadata reflects deployment accurately
+
+9. Metadata-Driven Deployment Advantage
+
+This framework provides:
+
+✔ Incremental deployment
+✔ Branch isolation
+✔ Environment consistency
+✔ Deployment traceability
+✔ Safe production promotion
+✔ Automated rollback support
+
+10. Audit & Governance
+
+Every deployment records:
+
+Who deployed
+
+Which commit
+
+Which SQL files
+
+Execution timestamp
+
+Environment
+
+Auditable via:
+
+Bitbucket history
+
+Rundeck logs
+
+Snowflake query history
+
+Metadata artifacts
+
+11. Demo Walkthrough (Recommended)
+Step 1
+
+Show repo structure.
+
+Step 2
+
+Create small SQL change.
+
+Step 3
+
+Run feature branch deployment.
+
+Show:
+
+detected files
+
+execution logs
+
+Step 4
+
+Merge PR → main.
+
+Run non-prod deployment.
+
+Step 5
+
+Execute production job.
+
+Highlight controlled promotion.
+
+Step 6
+
+Show deployment history metadata.
+
+12. Future Enhancements (Optional Slide)
+
+PR validation automation
+
+Dependency graph validation
+
+Schema drift detection
+
+Automated testing execution
+
+Slack/Email notifications
+
+DBT integration layer
+
+This is now complete enterprise-grade documentation suitable for:
+
+Architecture review
+
+Demo presentation
+
+Leadership walkthrough
+
+Confluence publishing
+
+If needed, next step can be:
+
+Convert this into executive demo slide deck (10 slides), or
+
+Create architecture diagram visuals for presentation.
+
+Please do both
+
+Below are both deliverables:
+
+Executive Demo Slide Deck Structure (ready to present)
+
+Architecture Diagrams you can directly recreate in PPT / Draw.io
+
+This is structured exactly how senior architects / directors expect a demo.
+
+PART 1 — Executive Demo Slide Deck
+
+(Target: 10–12 slides, 15-minute demo)
+
+Slide 1 — Title
+
+Automated Snowflake SQL Deployment Framework
+Bitbucket + Rundeck Driven CI/CD
+
+Presented by:
+Venkata Durgarao Uppuluri
+
+Slide 2 — Business Problem
+
+Before Automation:
+
+Manual SQL deployments
+
+Missed scripts between environments
+
+No deployment audit trail
+
+Developers overwriting each other’s work
+
+Risky production releases
+
+Goal
+
+Automated, repeatable, metadata-driven Snowflake deployments.
+
+Slide 3 — Solution Overview
+
+Key Idea:
+
+✅ SQL stored in Git
+✅ Detect only modified SQL
+✅ Deploy automatically
+✅ Track history per environment
+✅ Enable controlled promotion
+
+One sentence message
+
+Git becomes the deployment control system.
+
+Slide 4 — High Level Architecture
+Developer
+   ↓ Commit SQL
+Bitbucket Repo
+   ↓
+Rundeck Job
+   ↓
+Deployment Engine
+   ↓
+Snowflake
+   ↓
+Deployment Metadata Updated
+
+
+Talking point:
+
+Rundeck is orchestration layer
+
+Repo drives everything
+
+Slide 5 — Repository Structure
+
+Show screenshot of repo.
+
+Explain:
+
+/sql → database objects
+
+/src/deploy → deployment engine
+
+/metadata → deployment history
+
+/docs/test → validation scenarios
+
+Key Message:
+
+Repository = Source Code + Deployment Intelligence
+
+Slide 6 — Deployment Engine Design
+
+Explain internal logic:
+
+Detect changed SQL using git diff
+
+Read metadata history
+
+Build deployment manifest
+
+Execute SQL in Snowflake
+
+Update metadata
+
+Important line to say
+
+We deploy only what changed — not entire database.
+
+Slide 7 — Rundeck Integration
+
+Use your screenshot.
+
+Explain:
+
+Non-Prod Jobs
+
+deploy-s3
+
+deploy-s3-dataeng-snowflake
+
+Snowflake_data_eng
+
+Prod Jobs
+
+Snowflake_data_eng
+
+Snowflake_data_eng_rollback
+
+Message:
+
+Same deployment engine, different environment controls.
+
+Slide 8 — Branch Promotion Model
+Feature Branch → DEV
+       ↓
+Merge to Main → NON-PROD
+       ↓ Approval
+Tag/Release → PROD
+
+
+Explain:
+
+Developers test independently
+
+Main branch stabilizes integration
+
+Production remains protected
+
+Slide 9 — Use Case Demo 1
+Feature Branch Deployment
+
+Scenario:
+
+Developer changes 2 SQL files.
+
+Flow:
+
+Commit to feature branch
+
+Run Rundeck job
+
+Only modified SQL executed
+
+Metadata updated
+
+Show:
+
+Bitbucket commit
+
+Rundeck execution result
+
+Slide 10 — Use Case Demo 2
+Main Branch Deployment
+
+After PR merge:
+
+System detects delta from last deployment
+
+Deploys only merged changes
+
+Ensures environment alignment
+
+Message:
+
+Promotion without re-running everything.
+
+Slide 11 — Use Case Demo 3
+Production Deployment
+
+Explain controls:
+
+Restricted job
+
+Metadata comparison
+
+Commit consistency validation
+
+Audit trail generated
+
+Highlight:
+
+Production is promotion, not redeployment.
+
+Slide 12 — Rollback Capability
+
+Show rollback job.
+
+Explain:
+
+Reads deployment history
+
+Identifies affected SQL
+
+Restores previous state
+
+Key Message:
+
+Production recovery in minutes.
+
+Slide 13 — Governance & Audit
+
+Framework provides:
+
+Git history
+
+Rundeck execution logs
+
+Snowflake query tracking
+
+Metadata versioning
+
+Result:
+
+✔ Fully auditable pipeline
+
+Slide 14 — Benefits
+
+Engineering Benefits:
+
+Faster releases
+
+Developer independence
+
+Safe deployments
+
+Zero manual tracking
+
+Business Benefits:
+
+Reduced risk
+
+Controlled production promotion
+
+Enterprise governance
+
+Slide 15 — Future Roadmap
+
+Possible extensions:
+
+PR auto validation
+
+DBT integration
+
+Schema drift detection
+
+Automated testing
+
+Slack notifications
+
+PART 2 — Architecture Diagrams
+
+Below are diagrams you should recreate visually.
+
+Diagram 1 — System Architecture
+                +------------------+
+                |   Developers     |
+                +------------------+
+                         |
+                         | Git Commit
+                         v
+                +------------------+
+                |   Bitbucket Repo |
+                +------------------+
+                         |
+                         | Trigger / Manual Run
+                         v
+                +------------------+
+                |     Rundeck      |
+                |  Job Orchestrator|
+                +------------------+
+                         |
+                         v
+              +----------------------+
+              | Deployment Framework |
+              |  (Python Scripts)    |
+              +----------------------+
+                         |
+                         v
+                  +-------------+
+                  | Snowflake   |
+                  | Warehouse   |
+                  +-------------+
+                         |
+                         v
+             +------------------------+
+             | Deployment Metadata    |
+             | History JSON / Tables  |
+             +------------------------+
+
+Diagram 2 — Deployment Flow Logic
+Start Job
+   |
+Checkout Repo
+   |
+Read Metadata
+   |
+Detect Changed SQL
+   |
+Build Execution Order
+   |
+Execute SQL
+   |
+Update Metadata
+   |
+Finish
+
+Diagram 3 — Branch Promotion Model
+Feature Branch
+      |
+      v
+DEV Deployment
+      |
+      v
+Main Branch
+      |
+      v
+NON-PROD Deployment
+      |
+Approval Gate
+      |
+      v
+PRODUCTION Deployment
+
+Diagram 4 — Metadata Driven Deployment
+Last Prod Commit  -----
+                      |
+Current Main Commit -----> Compare
+                      |
+              Changed SQL Identified
+                      |
+                Deploy Only Delta
+
+Diagram 5 — Rollback Logic
+Rollback Triggered
+        |
+Read Previous Metadata Entry
+        |
+Identify Executed SQL
+        |
+Reverse / Restore Objects
+        |
+Environment Restored
+
+Recommended Demo Flow (Very Important)
+
+Do NOT start with slides.
+
+Start demo like this:
+
+Show repo first
+
+Show commit change
+
+Run Rundeck job live
+
+Show Snowflake result
+
+Then explain architecture
+
+This makes the audience believe the system immediately.
+
+If you want next level impact, I can also give you:
+
+Director-level storytelling script (what exact sentences to say)
+
+Architecture diagram PPT templates
+
+Enterprise naming standards slide
+
+Resume bullet points from this project
+
+Promotion-ready “Architect Demo Narrative”
+
+Tell me.
+
+Give me a prompt to use in gama.app to create ppt.
+
+Use the following single prompt inside Gamma.app.
+It is optimized to generate a clean enterprise architecture PPT instead of generic slides.
+
+Gamma.app Prompt
+Create a professional enterprise architecture presentation.
+
+Title:
+Automated Snowflake SQL Deployment Framework using Bitbucket and Rundeck
+
+Audience:
+Data Engineering Leadership, Architects, and DevOps Teams.
+
+Tone:
+Professional, technical, concise, enterprise-grade.
+Avoid marketing language. Focus on architecture clarity and engineering workflow.
+
+Slides Required:
+
+1. Title Slide
+- Project name
+- Automated Snowflake SQL Deployment Framework
+- Presenter name
+
+2. Problem Statement
+- Manual SQL deployments
+- Environment inconsistencies
+- Lack of deployment auditability
+- Risk in production releases
+
+3. Solution Overview
+- Git-driven SQL deployment
+- Automated change detection
+- Metadata-driven deployment
+- Controlled promotion across environments
+
+4. High-Level Architecture
+Show flow:
+Developer → Bitbucket → Rundeck → Deployment Engine → Snowflake → Metadata Tracking
+
+5. Repository Structure
+Explain folders:
+- sql/
+- src/deploy/
+- metadata/
+- docs/
+Explain repository as single source of truth.
+
+6. Deployment Engine Design
+Explain:
+- Git diff to detect modified SQL
+- Deployment manifest generation
+- Ordered execution
+- Metadata update
+
+7. Rundeck Integration
+Describe orchestration:
+- Non-prod deployment jobs
+- Production deployment jobs
+- Rollback jobs
+- Parameterized execution
+
+8. Branch Promotion Strategy
+Feature Branch → Dev
+Main Branch → Non-Prod
+Release/Approval → Production
+
+9. Feature Branch Deployment Use Case
+Show developer workflow and incremental deployment.
+
+10. Main Branch Deployment Use Case
+Explain merged changes deployment and environment synchronization.
+
+11. Production Deployment Workflow
+Explain governance controls, approvals, and metadata validation.
+
+12. Rollback Strategy
+Explain metadata-based rollback and recovery process.
+
+13. Governance and Auditability
+- Git history
+- Rundeck execution logs
+- Snowflake query history
+- Deployment metadata
+
+14. Benefits and Outcomes
+Engineering efficiency
+Deployment safety
+Repeatability
+Audit compliance
+
+15. Future Enhancements
+- PR validation automation
+- Dependency analysis
+- DBT integration
+- Automated testing
+- Notifications
+
+Design Requirements:
+- Minimal text
+- Architecture diagrams preferred over paragraphs
+- Modern enterprise visuals
+- Consistent color theme
+- Use flow diagrams wherever possible
+- Include icons for Git, Automation, Cloud, and Data Warehouse
+
+Output:
+Generate a presentation suitable for a technical demo to senior architects.
+
+How to Use
+
+Open gamma.app
+
+Click Create → Paste in text
+
+Paste entire prompt
+
+Choose Professional / Modern theme
+
+Generate
+
+If you want, next I can give you a much stronger “Architect-level Gamma prompt” that makes the deck look like a McKinsey / AWS re:Invent presentation instead of a normal engineering PPT.
+
+Is this conversation helpful so far?
