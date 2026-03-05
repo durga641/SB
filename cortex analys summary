@@ -1,0 +1,31 @@
+Automatic Semantic Layer Generation
+The demo showed how an existing Power BI report (.pbix) can be imported into Snowflake Cortex Analyst UI. Snowflake parses the Power BI semantic model (measures, dimensions, relationships) and automatically generates a Snowflake Semantic View, eliminating the need to manually rebuild business logic in Snowflake.
+
+Centralized Metric Definitions inside Snowflake
+The generated Semantic View stores business metrics, dimensions, and table relationships directly in Snowflake. This allows teams to standardize KPI definitions at the data platform layer rather than duplicating logic across BI dashboards or ad-hoc SQL queries.
+
+Natural Language Analytics using Cortex Analyst
+Once the semantic view is created, Cortex Analyst enables natural language queries against the data model. User questions are interpreted by the LLM, translated into SQL using the semantic model context, executed on Snowflake, and returned as structured results.
+
+Reduced SQL Dependency for Business Users
+Because Cortex Analyst understands the semantic structure of the data, analysts or stakeholders can retrieve insights using business language instead of writing SQL, while still relying on governed Snowflake datasets.
+
+Reuse of Existing BI Investments
+Organizations with existing Power BI semantic models can quickly onboard them into Snowflake without redesigning the entire model. This helps accelerate adoption of AI-driven analytics workflows.
+
+AI-Ready Data Platform Architecture
+By placing the semantic layer directly inside Snowflake, the platform becomes compatible with LLM-based analytics interfaces, enabling conversational querying while maintaining data governance, RBAC security, and warehouse execution performance.
+
+Potential Value for Our Team
+
+Standardize business metrics and dimensions across reporting assets
+
+Reduce metric duplication across dashboards and SQL reports
+
+Enable self-service analytics through natural language querying
+
+Provide an AI interface on top of curated Snowflake datasets without changing existing ingestion pipelines
+
+If you want, I can also give you a shorter 3–4 line version managers usually prefer in status updates or meeting summaries.
+
+summari
