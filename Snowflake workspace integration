@@ -1,0 +1,179 @@
+-- =========================================================
+-- SNOWFLAKE + BITBUCKET SHARED TEAM SETUP
+-- Using existing role: TEAM_DATA_ENG
+-- Based on names visible in your screenshot
+-- =========================================================
+
+-- ---------------------------------------------------------
+-- 0. ADMIN STEP
+-- ---------------------------------------------------------
+USE ROLE ACCOUNTADMIN;
+
+-- Optional: only if TEAM_DATA_ENG needs ability to create integrations
+-- In production, usually admin creates the integration and team only gets USAGE
+GRANT CREATE INTEGRATION ON ACCOUNT TO ROLE TEAM_DATA_ENG;
+
+-- ---------------------------------------------------------
+-- 1. USE TEAM ROLE AND TARGET SCHEMA
+-- ---------------------------------------------------------
+USE ROLE TEAM_DATA_ENG;
+USE SCHEMA TEAM_DATA_ENG.HITENDRA_SAHAY;
+
+-- ---------------------------------------------------------
+-- 2. CREATE SHARED SECRET
+--    Do NOT paste normal user password unless your org explicitly allows it.
+--    Prefer Bitbucket app password / PAT.
+-- ---------------------------------------------------------
+CREATE OR REPLACE SECRET TEAM_DATA_ENG.HITENDRA_SAHAY.HITENDRA_BITBUCKET_SECRET
+  TYPE = PASSWORD
+  USERNAME = '<BITBUCKET_USERNAME_OR_x-token-auth>'
+  PASSWORD = '<BITBUCKET_APP_PASSWORD_OR_PAT>';
+
+-- ---------------------------------------------------------
+-- 3. CREATE API INTEGRATION
+-- ---------------------------------------------------------
+USE ROLE ACCOUNTADMIN;
+
+CREATE OR REPLACE API INTEGRATION HITENDRA_PRIVATE_BITBUCKET_API_INTEGRATION
+  API_PROVIDER = git_https_api
+  API_ALLOWED_PREFIXES = ('https://bitbucket.org/ascap/')
+  ALLOWED_AUTHENTICATION_SECRETS = (TEAM_DATA_ENG.HITENDRA_SAHAY.HITENDRA_BITBUCKET_SECRET)
+  ENABLED = TRUE;
+
+-- Give team role access to integration
+GRANT USAGE ON INTEGRATION HITENDRA_PRIVATE_BITBUCKET_API_INTEGRATION
+TO ROLE TEAM_DATA_ENG;
+
+-- ---------------------------------------------------------
+-- 4. GRANT ACCESS TO SECRET
+-- ---------------------------------------------------------
+GRANT USAGE ON SECRET TEAM_DATA_ENG.HITENDRA_SAHAY.HITENDRA_BITBUCKET_SECRET
+TO ROLE TEAM_DATA_ENG;
+
+-- ---------------------------------------------------------
+-- 5. CREATE GIT REPOSITORY OBJECT
+-- ---------------------------------------------------------
+USE ROLE TEAM_DATA_ENG;
+USE SCHEMA TEAM_DATA_ENG.HITENDRA_SAHAY;
+
+CREATE OR REPLACE GIT REPOSITORY TEAM_DATA_ENG.HITENDRA_SAHAY.HITENDRA_PRIVATE_BITBUCKET_REPO
+  API_INTEGRATION = HITENDRA_PRIVATE_BITBUCKET_API_INTEGRATION
+  GIT_CREDENTIALS = TEAM_DATA_ENG.HITENDRA_SAHAY.HITENDRA_BITBUCKET_SECRET
+  ORIGIN = 'https://bitbucket.org/ascap/hitendra_private_repo.git';
+
+-- Grant usage on repo to the team role
+GRANT USAGE ON GIT REPOSITORY TEAM_DATA_ENG.HITENDRA_SAHAY.HITENDRA_PRIVATE_BITBUCKET_REPO
+TO ROLE TEAM_DATA_ENG;
+
+-- ---------------------------------------------------------
+-- 6. FETCH LATEST CONTENT
+-- ---------------------------------------------------------
+ALTER GIT REPOSITORY TEAM_DATA_ENG.HITENDRA_SAHAY.HITENDRA_PRIVATE_BITBUCKET_REPO FETCH;
+
+-- ---------------------------------------------------------
+-- 7. TEST COMMANDS
+-- ---------------------------------------------------------
+
+-- List files from main branch
+LS @TEAM_DATA_ENG.HITENDRA_SAHAY.HITENDRA_PRIVATE_BITBUCKET_REPO/branches/main;
+
+-- List files from a specific branch
+-- LS @TEAM_DATA_ENG.HITENDRA_SAHAY.HITENDRA_PRIVATE_BITBUCKET_REPO/branches/<branch_name>;
+
+-- Show branches
+SHOW GIT BRANCHES IN GIT REPOSITORY TEAM_DATA_ENG.HITENDRA_SAHAY.HITENDRA_PRIVATE_BITBUCKET_REPO;
+
+-- Show tags
+SHOW GIT TAGS IN GIT REPOSITORY TEAM_DATA_ENG.HITENDRA_SAHAY.HITENDRA_PRIVATE_BITBUCKET_REPO;
+
+-- Execute SQL directly from repo
+-- EXECUTE IMMEDIATE FROM
+-- @TEAM_DATA_ENG.HITENDRA_SAHAY.HITENDRA_PRIVATE_BITBUCKET_REPO/branches/<branch_name>/<folder>/<sql_filename>.sql;
+
+
+
+
+
+##################
+
+Important corrections from your screenshot:
+
+USERNAME = 'hsahay' is usually not the right choice if you are using a Bitbucket token/app password flow.
+Safer common pattern is:
+USERNAME = 'x-token-auth'
+PASSWORD = '<app password or PAT>'
+Do not keep real credentials in screenshots, shared SQL files, or chat.
+
+What is already visible from your screenshot and used above:
+
+Role: TEAM_DATA_ENG
+Schema: TEAM_DATA_ENG.HITENDRA_SAHAY
+Secret name: HITENDRA_BITBUCKET_SECRET
+Integration name: HITENDRA_PRIVATE_BITBUCKET_API_INTEGRATION
+Repo object name: HITENDRA_PRIVATE_BITBUCKET_REPO
+Repo URL: https://bitbucket.org/ascap/hitendra_private_repo.git
+
+What I intentionally did not copy:
+
+password
+token
+any secret value
+
+You should also rotate that Bitbucket secret now, because it was exposed in the screenshot.
+
+####################################
+
+
+-- drop secret team_data_eng.hitendra_sahay.hitendra_bitbucket_secret;
+
+-- git clone https://hsahay@bitbucket.org/ascap/dsp_usage_load.git
+
+use role accountadmin;
+
+GRANT CREATE INTEGRATION ON ACCOUNT TO ROLE team_data_eng;
+revoke create integration on account from role team_data_eng;
+
+use role team_data_eng;
+
+create or replace secret team_data_eng.hitendra_sahay.hitendra_bitbucket_secret
+type = password
+username = 'hsahay'
+password = '***';
+
+-- drop secret team_data_eng.hitendra_sahay.hitendra_bitbucket_secret;
+
+show secrets;
+
+create or replace api integration hitendra_private_bitbucket_api_integration
+  api_provider = git_https_api
+  api_allowed_prefixes = ('https://bitbucket.org/ascap/')
+  allowed_authentication_secrets = (team_data_eng.hitendra_sahay.hitendra_bitbucket_secret)
+  enabled = true;
+
+-- drop api integration hitendra_private_bitbucket_api_integration;
+
+create or replace git repository team_data_eng.hitendra_sahay.hitendra_private_bitbucket_repo
+  api_integration = hitendra_private_bitbucket_api_integration
+  git_credentials = team_data_eng.hitendra_sahay.hitendra_bitbucket_secret
+  origin = 'https://bitbucket.org/ascap/hitendra_private_repo.git';
+
+-- drop git repository team_data_eng.hitendra_sahay.hitendra_private_bitbucket_repo;
+
+-- useful commands
+
+-- list files
+ls @team_data_eng.hitendra_sahay.hitendra_private_bitbucket_repo/branches/main;
+-- ls @team_data_eng.hitendra_sahay.hitendra_private_bitbucket_repo/branches/<branch_name>;
+
+-- show branches
+show git branches in git repository team_data_eng.hitendra_sahay.hitendra_private_bitbucket_repo;
+
+-- show tags
+show git tags in git repository team_data_eng.hitendra_sahay.hitendra_private_bitbucket_repo;
+
+-- pull command
+alter git repository team_data_eng.hitendra_sahay.hitendra_private_bitbucket_repo fetch;
+
+-- execute something from the branch
+execute immediate from
+@team_data_eng.hitendra_sahay.hitendra_private_bitbucket_repo/branches/<branchName>/<folder>/<sql_filename>.sql;
