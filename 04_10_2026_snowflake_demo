@@ -66,3 +66,20 @@ snowsql -a <account>
 -d MY_DB
 -s MY_SCHEMA
 -q "EXECUTE DBT PROJECT MY_DB.MY_SCHEMA.MY_DBT_PROJECT ARGS='build --target prod';"
+
+
+Feature branch development
+↓
+Test in DEV workspace
+↓
+Deploy DEV DBT PROJECT
+↓
+Merge to main branch
+↓
+Snowflake PROD workspace pull repo
+↓
+Redeploy DBT PROJECT_PROD
+↓
+Unix trigger / schedule
+↓
+M
