@@ -1,0 +1,68 @@
+Snowflake DBT Project Deployment + Unix Trigger
+Demo
+Snowflake DBT Project Deployment + Unix Trigger Demo
+Slide 1 — High Level Implementation Design
+Current design:
+Unix server → ordered SQL files → Snowflake execution
+Proposed design:
+Unix server → Snowflake (private key auth) → Execute DBT PROJECT → Snowflake DBT models → Tables/Components:
+- Snowflake Workspace (DBT development)
+- Deployable DBT PROJECT object
+- Snowflake Task (optional scheduler)
+- Unix server trigger
+- Private key authentication
+- Monitoring in Snowflake UI
+Slide 2 — Current Monolithic SQL Execution Problem
+- SQLs executed in order.json
+- Unix server controls execution
+- No lineage
+- No modular deployment
+- Hard rollback
+- No model-level rerun
+- Difficult debugging
+Slide 3 — Target Architecture
+Developer → Snowflake Workspace → DBT Models
+Deploy → DBT PROJECT object (schema level)
+Execution → EXECUTE DBT PROJECT
+Scheduling → Snowflake TASK
+Unix trigger → SnowSQL using private key
+Slide 4 — Create DBT Project in Snowflake
+Workspace (UI Steps)
+1. Go to Snowflake Snowsight
+2. Navigate to Projects / Workspaces
+3. Create New Workspace
+4. Select DBT Project
+5. Provide Database, Schema, Role, Warehouse
+6. Create project
+7. Add models under models folder
+8. Validate project
+Slide 5 — Example DBT Model
+{{ config(materialized='table') }}
+select * from RAW.ORDERS
+Slide 6 — Deploy DBT Project
+Workspace → Deploy
+Provide Project name, Database, Schema, Target
+Click Deploy
+Slide 7 — Verify Deployable DBT Object
+SHOW DBT PROJECTS IN SCHEMA MY_DB.MY_SCHEMA;
+DESCRIBE DBT PROJECT MY_DB.MY_SCHEMA.MY_DBT_PROJECT;
+Slide 8 — Run DBT Project
+EXECUTE DBT PROJECT MY_DB.MY_SCHEMA.MY_DBT_PROJECT
+ARGS='run --target dev';
+Slide 9 — Create Snowflake Task
+CREATE OR REPLACE TASK RUN_DBT_PROJECT
+WAREHOUSE = DBT_WH
+SCHEDULE = 'USING CRON 0 6 * * * America/New_York'
+AS
+EXECUTE DBT PROJECT MY_DB.MY_SCHEMA.MY_DBT_PROJECT
+ARGS='build --target prod';
+ALTER TASK RUN_DBT_PROJECT RESUME;
+Slide 10 — Unix Shell Script
+snowsql -a <account>
+-u <user>
+--private-key-path /keys/rsa_key.p8
+-r DBT_ROLE
+-w DBT_WH
+-d MY_DB
+-s MY_SCHEMA
+-q "EXECUTE DBT PROJECT MY_DB.MY_SCHEMA.MY_DBT_PROJECT ARGS='build --target prod';"
