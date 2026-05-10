@@ -1,0 +1,69 @@
+Act as a Principal DevOps Engineer specialized in Snowflake, Liquibase, Bitbucket Pipelines, and CI/CD.
+
+Goal:
+Create a simple DEV-only Bitbucket repository for automating Snowflake deployments using Liquibase.
+
+Tech Stack:
+- Snowflake
+- Liquibase Community Edition
+- Bitbucket
+- Bitbucket Pipelines
+- Private key authentication
+- SQL files
+- XML changelog
+
+Scope:
+DEV environment only.
+
+Important Assumption:
+- Snowflake private key file is available inside the repository.
+- Snowflake key passphrase is stored in a config file.
+- Snowflake account, user, role, warehouse, database, schema, and other connection details are stored in a config file.
+- For now, do not use Bitbucket secured variables.
+- Mention clearly that this is acceptable only for DEV/demo setup and not recommended for QA/PROD.
+
+Requirements:
+1. Create complete repo structure.
+2. Use one SQL file per Snowflake object.
+3. Use Liquibase XML changelog.
+4. Use Snowflake private key authentication.
+5. Read Snowflake connection details from config file.
+6. Read private key passphrase from config file.
+7. Pipeline should:
+   - install/setup Liquibase if required
+   - read config values
+   - validate changelog
+   - run updateSQL
+   - deploy to DEV using liquibase update.
+8. Developers should:
+   - create feature branch
+   - test SQL in personal schema
+   - commit finalized SQL for DEV schema
+   - create PR
+   - merge to main
+   - pipeline deploys to DEV.
+9. Include sample files:
+   - bitbucket-pipelines.yml
+   - config/dev.properties
+   - liquibase.properties or generated liquibase.properties
+   - changelog/master-changelog.xml
+   - changelog/object-changelog.xml if needed
+   - sql/tables/sample_table.sql
+   - sql/views/sample_view.sql
+   - rollback files if needed
+   - scripts/deploy_dev.sh
+   - README.md
+10. Keep it simple and practical.
+11. Do not include QA or PROD.
+12. Explain that forward fix is preferred for DEV.
+
+Output Format:
+1. Repo folder structure
+2. Complete file contents
+3. Config file design
+4. Private key authentication setup
+5. Bitbucket pipeline implementation
+6. Developer workflow
+7. Deployment workflow
+8. Troubleshooting
+9. Security warning for moving to QA/PROD
