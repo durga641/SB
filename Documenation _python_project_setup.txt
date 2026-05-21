@@ -31,6 +31,11 @@ https://www.python.org/downloads/windows/
 IMPORTANT:
 During installation enable:
 
+
+pip freeze > requirements.txt
+Take all installed packages from current virtual environment
+and write them into requirements.txt
+
 Add Python to PATH
 4. Create Virtual Environment
 
