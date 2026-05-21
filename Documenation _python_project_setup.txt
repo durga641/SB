@@ -1,0 +1,95 @@
+# Initial Python Project Setup with VS Code (Windows)
+
+## 1. Create Project Folder
+
+Open Command Prompt:
+
+```cmd
+cd %USERPROFILE%\Documents
+mkdir gmail_agent
+cd gmail_agent
+2. Open Project in Visual Studio Code
+code .
+
+This opens the current folder in VS Code.
+
+3. Verify Python Installation
+
+Run:
+
+py --version
+
+Expected output:
+
+Python 3.x.x
+
+If Python is not installed:
+
+Download from:
+https://www.python.org/downloads/windows/
+
+IMPORTANT:
+During installation enable:
+
+Add Python to PATH
+4. Create Virtual Environment
+
+Inside VS Code terminal:
+
+py -m venv gmail_env
+
+This creates a dedicated Python environment for the project.
+
+Project structure:
+
+gmail_agent/
+    gmail_env/
+5. Activate Virtual Environment
+
+Run:
+
+gmail_env\Scripts\activate
+
+Expected terminal output:
+
+(gmail_env)
+
+This means the virtual environment is active.
+
+6. Upgrade pip
+python -m pip install --upgrade pip
+7. Install Required Packages
+
+Example:
+
+pip install google-api-python-client google-auth-oauthlib google-auth-httplib2
+8. Save Dependencies
+pip freeze > requirements.txt
+
+This creates:
+
+requirements.txt
+
+Used later for deployment or sharing the project.
+
+9. Deactivate Environment
+
+When finished:
+
+deactivate
+Recommended Project Structure
+gmail_agent/
+│
+├── gmail_env/
+├── agent.py
+├── requirements.txt
+├── credentials.json
+└── README.md
+Important Notes
+Always activate the environment before running the project.
+Verify (gmail_env) appears in terminal.
+Never commit secrets or tokens to GitHub.
+Add these to .gitignore:
+gmail_env/
+token.json
+credentials.json
