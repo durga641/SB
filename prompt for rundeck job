@@ -1,0 +1,38 @@
+I have an existing Rundeck job that runs scripts from a Bitbucket repository.
+
+Recently, I modified the Bitbucket repo. I want to keep using the same Rundeck job with only minor changes.
+
+Main requirement:
+Currently, the Rundeck job accesses the Snowflake private key using the existing mechanism. I want to introduce a new Snowflake key access mechanism from the modified repo, but I also want to keep the current mechanism available for testing and backward compatibility.
+
+Please analyze the repo and make the required changes with the following approach:
+
+1. Do not create a new Rundeck job.
+2. Keep the existing Rundeck job flow mostly unchanged.
+3. Add a configurable switch/flag/parameter to choose the Snowflake key access method.
+4. Support both modes:
+   - CURRENT mode: use the existing Snowflake key access mechanism.
+   - NEW mode: use the new Snowflake key access mechanism from the modified Bitbucket repo.
+5. For testing, default the switch to CURRENT mode so existing behavior is not broken.
+6. Make the switch easy to control from Rundeck job options, environment variables, or config file.
+7. Use clean conditional logic such as if/else or switch-case depending on the language used in the repo.
+8. Avoid hardcoding secrets or private key paths.
+9. Add clear logging to show which Snowflake key access mode is being used, but do not print any secret values.
+10. Ensure existing functionality continues to work when CURRENT mode is selected.
+11. Update any relevant README/config comments explaining how to switch between CURRENT and NEW modes.
+
+Expected implementation style:
+
+- Add a variable like:
+  SNOWFLAKE_KEY_ACCESS_MODE=CURRENT
+
+- Logic should behave like:
+
+  if SNOWFLAKE_KEY_ACCESS_MODE == "CURRENT":
+      use existing Snowflake key access logic
+  elif SNOWFLAKE_KEY_ACCESS_MODE == "NEW":
+      use new Snowflake key access logic
+  else:
+      fail with a clear error message
+
+Please inspect the codebase, identify where the Snowflake key is currently accessed, and implement this switch in the safest and least disruptive way.
