@@ -1,0 +1,26 @@
+Developer creates/updates ChangeSet
+            │
+            ▼
+      Liquibase Validate
+            │
+            ▼
+ Calculates checksum for each ChangeSet
+            │
+            ▼
+Reads DATABASECHANGELOG table
+            │
+            ▼
+Compares stored checksum with current checksum
+            │
+            ▼
+      ┌───────────────┐
+      │ Match?        │
+      └──────┬────────┘
+             │
+      Yes    │     No
+             │
+             ▼
+ Execute SQL      Validation Failed
+             │
+             ▼
+Update DATABASECHANGELOG
