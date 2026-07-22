@@ -83,3 +83,14 @@ Redeploy DBT PROJECT_PROD
 Unix trigger / schedule
 ↓
 M
+
+
+master-changelog.xml
+        │
+        ├── tables-changelog.xml
+        ├── views-changelog.xml
+        ├── procedures-changelog.xml
+        ├── functions-changelog.xml
+        ├── tasks-changelog.xml
+        ├── streams-changelog.xml
+        └── fileformats-changelog.xml
