@@ -1,0 +1,41 @@
+Liquibase Rollback Guide
+Overview
+Liquibase rollbacks operate on changesets regardless of whether the changeset is defined in XML
+or executes an external SQL file via <sqlFile>.
+1. Rollback by Tag
+Purpose: Roll back everything after a release tag.
+Example:
+v1.0 -> Customer, Orders
+v1.1 -> Procedure, Product
+v1.2 -> Email column
+Commands:
+liquibase tag v1.2
+liquibase rollback v1.0
+Use for production release rollback.
+2. Rollback Count
+Purpose: Undo the last N changesets.
+Example: rollbackCount 2 removes the last two deployed changesets only.
+3. Rollback to Date
+Purpose: Restore the database to a specific point in time.
+Example:
+liquibase rollbackToDate "2026-07-30T09:06:00"
+4. Rollback One Changeset
+Purpose: Roll back one specific changeset using its ID, author, and changelog file. Useful when a
+single object change must be reverted.
+5. Rollback One Update
+Purpose: Undo only the most recent Liquibase update operation (deployment batch).
+6. Rollback SQL
+Purpose: Generate the SQL that would be executed during rollback without actually running it.
+Example:
+liquibase rollbackSQL v1.0
+How It Works with the Proposed Architecture
+master.xml -> schema.xml -> customer.xml + procedure.xml. Liquibase tracks each changeset
+independently. A rollbackCount 2 operation can roll back procedure-001 and customer-002 even
+though one is XML and the other executes an external SQL file.
+Recommended Enterprise Rollback Strategy
+1. Rollback by Tag (production releases)
+2. Rollback Count (development/testing)
+3. Rollback One Changeset (targeted fixes)
+4. Rollback SQL (DBA review)
+5. Rollback to Date (point-in-time recovery)
+6. Rollback One Update (undo latest deployment)
